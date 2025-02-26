@@ -45,10 +45,25 @@ void error_loop() {
 void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
-    // Publish the message
+    // // Publish the message
+    // RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
+    // Serial.println("Publishing: " + String(msg.data));
+    // // Increment the message data
+    // msg.data += 2;
+
+    int received_data = 0; // Default value if no data is received
+
+    if (Serial1.available()) {
+      String data_str = Serial1.readStringUntil('\n'); // Read data until newline
+      received_data = data_str.toInt(); // Convert to integer
+      Serial.print("Received from Arduino: ");
+      Serial.println(received_data);
+    } else {
+      Serial.println("No data received, publishing 0.");
+    }
+
+    msg.data = received_data;
     RCSOFTCHECK(rcl_publish(&publisher, &msg, NULL));
-    // Increment the message data
-    msg.data += 2;
   }
 }
 
@@ -56,6 +71,9 @@ void setup() {
   // Start Serial (for debugging)
   Serial.begin(115200);
   delay(1000);
+
+  // Initialize UART (for Lolin S2 use GPIO 37 as RX, GPIO 39 as TX)
+  Serial1.begin(115200, SERIAL_8N1, 37, 39);  // RX=GPIO37, TX=GPIO39
 
   // Connect to WiFi
   Serial.print("Connecting to WiFi...");
