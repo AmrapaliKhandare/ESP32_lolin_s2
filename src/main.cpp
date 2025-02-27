@@ -6,7 +6,7 @@
 #include <rcl/rcl.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
-#include <std_msgs/msg/int32_multi_array.h>
+#include <std_msgs/msg/float32_multi_array.h>
 
 #if !defined(MICRO_ROS_TRANSPORT_ARDUINO_WIFI)
 #error This example is only available for Arduino framework with WiFi transport.
@@ -14,7 +14,7 @@
 
 // Define ROS2 objects for a publisher, a message, an executor, support objects, an allocator, a node, and a timer
 rcl_publisher_t publisher;
-std_msgs__msg__Int32MultiArray msg;
+std_msgs__msg__Float32MultiArray msg;
 
 rclc_executor_t executor;
 rclc_support_t support;
@@ -47,18 +47,19 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   if (timer != NULL) {
     if (Serial1.available()) {
       String data = Serial1.readStringUntil('\n'); // Read full line
-      int bot_x, bot_y, bot_ang, ping_ang, ping_dist;
-      if (sscanf(data.c_str(), "%d,%d,%d,%d,%d", &bot_x, &bot_y, &bot_ang, &ping_ang, &ping_dist) == 5) {
+      float bot_x, bot_y, bot_ang, ping_ang, ping_dist, vol;
+      if (sscanf(data.c_str(), "%f,%f,%f,%f,%f,%f", &bot_x, &bot_y, &bot_ang, &ping_ang, &ping_dist, &vol) == 6) {
         msg.data.data[0] = bot_x;
         msg.data.data[1] = bot_y;
         msg.data.data[2] = bot_ang;
         msg.data.data[3] = ping_ang;
         msg.data.data[4] = ping_dist;
+        msg.data.data[5] = vol;
       } else {
-        for (int i = 0; i < 5; i++) msg.data.data[i] = 0;
+        for (int i = 0; i < 6; i++) msg.data.data[i] = 0;
       }
     } else {
-      for (int i = 0; i < 5; i++) msg.data.data[i] = 0;
+      for (int i = 0; i < 6; i++) msg.data.data[i] = 0;
     }
     rcl_publish(&publisher, &msg, NULL);
   }
@@ -66,24 +67,24 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
 
 void setup() {
   // Start Serial (for debugging)
-  Serial.begin(115200);
+  // Serial.begin(115200);
   delay(1000);
 
   // Initialize UART (for Lolin S2 use GPIO 37 as RX, GPIO 39 as TX)
   Serial1.begin(115200, SERIAL_8N1, 37, 39);  // RX=GPIO37, TX=GPIO39
 
   // Connect to WiFi
-  Serial.print("Connecting to WiFi...");
+  // Serial.print("Connecting to WiFi...");
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    // Serial.print(".");
   }
-  Serial.println("\nWiFi Connected!");
+  // Serial.println("\nWiFi Connected!");
 
   // Set up micro-ROS communication over WiFi
   set_microros_wifi_transports(ssid, password, agent_ip, agent_port);
-  Serial.println("Connected to micro-ROS agent via WiFi");
+  // Serial.println("Connected to micro-ROS agent via WiFi");
 
   // Allow some time for everything to initialize
   delay(2000);
@@ -101,7 +102,7 @@ void setup() {
   RCCHECK(rclc_publisher_init_default(
     &publisher,
     &node,
-    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32MultiArray),
+    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
     "micro_ros_wifi_publisher"));
 
   // Set up a timer to publish messages every 1 second
@@ -117,9 +118,9 @@ void setup() {
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
   // Initialize message data
-  msg.data.size = 5; // 5 values (bot_x, bot_y, bot_ang, ping_ang, ping_dist)
-  msg.data.capacity = 5;
-  msg.data.data = (int32_t*)malloc(5 * sizeof(int32_t));
+  msg.data.size = 6; // 5 values (bot_x, bot_y, bot_ang, ping_ang, ping_dist, vol)
+  msg.data.capacity = 6;
+  msg.data.data = (float_t*)malloc(6 * sizeof(float_t));
 }
 
 void loop() {
