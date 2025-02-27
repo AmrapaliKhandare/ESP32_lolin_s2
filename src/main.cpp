@@ -52,6 +52,7 @@ void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
     if (Serial1.available()) {
+      digitalWrite(15, HIGH);
       String data = Serial1.readStringUntil('\n'); // Read full line
       float bot_x, bot_y, bot_ang, ping_ang, ping_dist, vol;
       if (sscanf(data.c_str(), "%f,%f,%f,%f,%f,%f", &bot_x, &bot_y, &bot_ang, &ping_ang, &ping_dist, &vol) == 6) {
@@ -107,6 +108,7 @@ void setup() {
   // Start Serial (for debugging)
   delay(1000);
 
+  pinMode(15, OUTPUT);
   // Initialize UART (for Lolin S2 use GPIO 37 as RX, GPIO 39 as TX)
   Serial1.begin(9600, SERIAL_8N1, 37, 39);  // RX=GPIO37, TX=GPIO39
 
